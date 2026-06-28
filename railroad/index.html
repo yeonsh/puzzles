@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Railroad Daily</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>RAILROAD DAILY</h1>
+    <div id="hud">
+      <span id="date"></span>
+      <span id="moves">Moves: 0 / 0</span>
+      <span id="timer">Time: 0.0s</span>
+    </div>
+  </header>
+  <main>
+    <canvas id="board"></canvas>
+    <div id="controls">
+      <button id="go">GO</button>
+      <button id="retry" hidden>RETRY</button>
+    </div>
+    <section id="result" hidden></section>
+    <section id="leaderboard"><h2>Top 10</h2><ol id="lb-list"></ol></section>
+  </main>
+  <!-- Leaderboard API base. Empty = same-origin (local dev via wrangler dev).
+       The GitHub Pages deploy overrides this with the deployed Worker URL. -->
+  <script>window.RAILROAD_API_BASE = 'https://railroad.yeonsh.workers.dev';</script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
