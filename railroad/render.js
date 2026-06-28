@@ -29,23 +29,31 @@ export function drawBoard(ctx, game, sprites, layout) {
   }
 }
 
+// Interpolated train position (in cell units) along `path` at a given elapsed
+// time. `seg` is clamped to [0, last]: the rAF timestamp on the first frame can
+// be slightly less than the captured start time, making elapsed negative — left
+// unclamped that yields i = -1 and path[-1] === undefined, which crashes the
+// animation loop. Returns `done` once the train reaches the final cell.
+export function trainPositionAt(path, elapsedMs, durationPerCell) {
+  const last = path.length - 1;
+  const seg = Math.max(0, Math.min(last, elapsedMs / durationPerCell));
+  const i = Math.floor(seg);
+  const t = seg - i;
+  const a = path[i];
+  const b = path[Math.min(last, i + 1)];
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, done: seg >= last };
+}
+
 export function animateTrain(ctx, game, sprites, layout, onDone) {
   const { tileSize } = layout;
   const path = game.path;
   const durationPerCell = 180;
   const startTime = performance.now();
   function frame(now) {
-    const elapsed = now - startTime;
-    const seg = Math.min(path.length - 1, elapsed / durationPerCell);
-    const i = Math.floor(seg);
-    const t = seg - i;
-    const a = path[i];
-    const b = path[Math.min(path.length - 1, i + 1)];
-    const px = (a.x + (b.x - a.x) * t) * tileSize;
-    const py = (a.y + (b.y - a.y) * t) * tileSize;
+    const pos = trainPositionAt(path, now - startTime, durationPerCell);
     drawBoard(ctx, game, sprites, layout);
-    ctx.drawImage(sprites.locomotive, px, py);
-    if (seg >= path.length - 1) { onDone && onDone(); return; }
+    ctx.drawImage(sprites.locomotive, pos.x * tileSize, pos.y * tileSize);
+    if (pos.done) { onDone && onDone(); return; }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
