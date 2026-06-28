@@ -1,14 +1,13 @@
-const W_MOVE = 100; // points per unused rotation
-const W_TIME = 1;   // points per unused second
+const SCORE_BASE = 2000; // points; decays with completion time
+const STAR3_MS = 20000;  // <= 20s -> 3 stars
+const STAR2_MS = 45000;  // <= 45s -> 2 stars
 
-export function computeScore({ movesUsed, timeMs, moveLimit, timeLimitMs }) {
-  const movesLeft = Math.max(0, moveLimit - movesUsed);
-  const secondsLeft = Math.max(0, Math.floor((timeLimitMs - timeMs) / 1000));
-  return movesLeft * W_MOVE + secondsLeft * W_TIME;
+export function computeScore({ timeMs }) {
+  return Math.max(0, SCORE_BASE - Math.floor(timeMs / 100));
 }
 
-export function starsFor({ movesUsed, par, timeMs, timeLimitMs }) {
-  if (movesUsed === par && timeMs <= timeLimitMs * 0.5) return 3;
-  if (movesUsed <= Math.ceil(par * 1.5)) return 2;
+export function starsFor({ timeMs }) {
+  if (timeMs <= STAR3_MS) return 3;
+  if (timeMs <= STAR2_MS) return 2;
   return 1;
 }

@@ -21,10 +21,14 @@ export function drawBoard(ctx, game, sprites, layout) {
   const { tileSize, w, h } = layout;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const cell = game.grid[y * w + x];
+      const i = y * w + x;
+      const cell = game.grid[i];
       ctx.drawImage(sprites.grass, x * tileSize, y * tileSize);
-      const sprite = spriteForCell(cell, sprites);
-      ctx.drawImage(sprite, x * tileSize, y * tileSize);
+      ctx.drawImage(spriteForCell(cell, sprites), x * tileSize, y * tileSize);
+      if (game.locked && game.locked.has(i)) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+      }
     }
   }
 }
@@ -44,17 +48,12 @@ export function trainPositionAt(path, elapsedMs, durationPerCell) {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, done: seg >= last };
 }
 
-export function animateTrain(ctx, game, sprites, layout, onDone) {
+export function drawCrash(ctx, layout, cell) {
   const { tileSize } = layout;
-  const path = game.path;
-  const durationPerCell = 180;
-  const startTime = performance.now();
-  function frame(now) {
-    const pos = trainPositionAt(path, now - startTime, durationPerCell);
-    drawBoard(ctx, game, sprites, layout);
-    ctx.drawImage(sprites.locomotive, pos.x * tileSize, pos.y * tileSize);
-    if (pos.done) { onDone && onDone(); return; }
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
+  const cx = cell.x * tileSize + tileSize / 2;
+  const cy = cell.y * tileSize + tileSize / 2;
+  ctx.font = `${Math.floor(tileSize * 0.9)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('💥', cx, cy);
 }

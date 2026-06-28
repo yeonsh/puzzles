@@ -3,12 +3,12 @@
 // deploy sets `window.RAILROAD_API_BASE` to the deployed Worker URL.
 const API_BASE = (typeof window !== 'undefined' && window.RAILROAD_API_BASE) || '';
 
-export async function submitScore(date, { movesUsed, timeMs, replay, nickname }) {
+export async function submitScore(date, { score, timeMs, nickname }) {
   try {
     const res = await fetch(API_BASE + '/api/score', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ date, movesUsed, timeMs, replay, nickname }),
+      body: JSON.stringify({ date, nickname, score, timeMs }),
     });
     if (!res.ok) return null;
     return await res.json();

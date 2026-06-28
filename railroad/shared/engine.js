@@ -1,19 +1,65 @@
 import {
-  DIRS, DELTA, exitsOf, connects, minRotationsTo,
+  DIRS, DELTA, OPPOSITE, exitsOf, connects, minRotationsTo,
 } from './tiles.js';
 
 export function createGame(board) {
   const grid = board.grid.map((c) => (c ? { ...c } : null));
-  return { ...board, grid, movesUsed: 0, status: 'playing' };
+  return { ...board, grid, movesUsed: 0, phase: 'prep', train: null, locked: new Set() };
 }
 
 export function rotateTile(game, x, y) {
-  if (game.status !== 'playing') return false;
+  if (game.phase !== 'prep' && game.phase !== 'running') return false;
+  if (game.locked.has(y * game.w + x)) return false;
   const cell = game.grid[y * game.w + x];
   if (!cell || !cell.rotatable) return false;
   cell.orientation = (cell.orientation + 1) % 4;
   game.movesUsed++;
   return true;
+}
+
+export function isLocked(game, x, y) {
+  return game.locked.has(y * game.w + x);
+}
+
+export function departTrain(game) {
+  if (game.phase !== 'prep') return;
+  game.phase = 'running';
+  game.train = { x: game.start.x, y: game.start.y, entryDir: 0 };
+  game.locked.add(game.start.y * game.w + game.start.x);
+}
+
+function onwardDir(cell, entryDir) {
+  const exits = exitsOf(cell);
+  for (const dir of DIRS) if ((exits & dir) && dir !== entryDir) return dir;
+  return 0;
+}
+
+export function nextCell(game) {
+  const { train, grid, w, h } = game;
+  const cell = grid[train.y * w + train.x];
+  const dir = onwardDir(cell, train.entryDir);
+  if (!dir) return null;
+  const [dx, dy] = DELTA[dir];
+  const nx = train.x + dx, ny = train.y + dy;
+  if (nx < 0 || ny < 0 || nx >= w || ny >= h) return null;
+  return { x: nx, y: ny, dir };
+}
+
+export function advanceTrain(game) {
+  if (game.phase !== 'running') return game.phase;
+  const next = nextCell(game);
+  if (!next) { game.phase = 'dead'; return 'crashed'; }
+  if (game.locked.has(next.y * game.w + next.x)) { game.phase = 'dead'; return 'crashed'; } // loop: never re-enter a traveled cell
+  const cell = game.grid[game.train.y * game.w + game.train.x];
+  const ncell = game.grid[next.y * game.w + next.x];
+  if (!ncell || !connects(exitsOf(cell), exitsOf(ncell), next.dir)) {
+    game.phase = 'dead';
+    return 'crashed';
+  }
+  game.train = { x: next.x, y: next.y, entryDir: OPPOSITE[next.dir] };
+  game.locked.add(next.y * game.w + next.x);
+  if (next.x === game.end.x && next.y === game.end.y) { game.phase = 'won'; return 'won'; }
+  return 'moved';
 }
 
 export function isSolved(game) {
@@ -40,16 +86,6 @@ export function isSolved(game) {
     }
   }
   return false;
-}
-
-export function pressGo(game) {
-  if (game.status !== 'playing') return game.status;
-  game.status = isSolved(game) ? 'won' : 'dead';
-  return game.status;
-}
-
-export function isOutOfMoves(game) {
-  return game.movesUsed >= game.moveLimit;
 }
 
 export function simulate(board, moves) {
